@@ -31,7 +31,7 @@ class User(AbstractUser):
         return self.username
 
     def save(self, *args, **kwargs):
-        email_username = self.email.split('@')
+        email_username = self.email.split('@')[0]
         if self.full_name == "" or self.full_name == None:
              self.full_name = self.email
              self.username = email_username
@@ -81,8 +81,4 @@ def create_user_profile(sender, instance, created, **kwargs):
 	if created:
 		Profile.objects.create(user=instance)
 
-def save_user_profile(sender, instance, **kwargs):
-	instance.profile.save()
-
 post_save.connect(create_user_profile, sender=User)
-post_save.connect(save_user_profile, sender=User)
