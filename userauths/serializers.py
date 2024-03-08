@@ -26,20 +26,22 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'full_name', 'phone' 'password1', 'password2')
+        fields = ('email', 'full_name', 'phone' ,'password1', 'password2')
         
         
     def validate(self, attrs):
-        if attrs.get('password1') != attrs.get('password2'):
+        print("what is printed in attrs,", attrs)
+        if attrs['password1'] != attrs['password2']:
             raise serializers.ValidationError({'password': 'passwords must be the same'})
         return attrs
     
     
     def create(self, validated_data):
-        user = User.objects.create(username= validated_data['username'], email= validated_data['email'], full_name= validated_data['full_name'], phone= validated_data['phone'])
-    
-        email_user, mobile =  user.email.split('@')
-        user.set_password(validate_password['password'])
+        user = User.objects.create( email= validated_data['email'], full_name= validated_data['full_name'], phone= validated_data['phone'])
+        print(validated_data)
+        email_user =  user.email.split('@')[0]
+        user.set_password(validated_data['password1'])
+        user.username = email_user
         user.save()
         return user   
 
