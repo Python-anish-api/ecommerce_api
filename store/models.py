@@ -524,6 +524,25 @@ def update_product_rating(sender, instance, **kwargs):
     if instance.product:
         instance.product.save()
 
+
+
+
+class Tax(models.Model):
+    country = models.CharField(max_length=500)
+    rate = models.IntegerField(default=5, help_text="Numbers added here are in percentage (5 = 5%)")
+    active = models.BooleanField(default=True)
+    date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name_plural = "Tax"
+
+    def __str__(self):
+        return f"{self.country}"
+    
+
+
+
+
 # Define a model for Wishlist
 class Wishlist(models.Model):
     # A foreign key relationship to the User model with CASCADE deletion

@@ -41,23 +41,30 @@ class PasswordResetEmailVerify(generics.RetrieveAPIView):
             
 
 class PasswordChangeView(generics.CreateAPIView):
-    permission_classes = (AllowAny, )
-    serializer_class =  UserSerializer
+    permission_classes = (AllowAny,)
+    serializer_class = UserSerializer
     
     def create(self, request, *args, **kwargs):
         payload = request.data
-        print('payload', payload)
         
-        otp = payload.get('otp')
-        uidb64 = payload.get('uidb64')
-        password = payload.get('password')
-        
-        user = User.objects.get(otp=otp, pk=uidb64)
+        otp = payload['otp']
+        uidb64 = payload['uidb64']
+        reset_token = payload['reset_token']
+        password = payload['password']
+
+        print("otp ======", otp)
+        print("uidb64 ======", uidb64)
+        print("reset_token ======", reset_token)
+        print("password ======", password)
+
+        user = User.objects.get(id=uidb64, otp=otp)
         if user:
             user.set_password(password)
-            user.otp= ''
+            user.otp = ""
+            user.reset_token = ""
             user.save()
-            return Response({'message': 'password changed successfully'},sltatus=status.HTTP_201_CREATED)
+
+            
+            return Response( {"message": "Password Changed Successfully"}, status=status.HTTP_201_CREATED)
         else:
-            return Response({'message': 'invalid otp or user doesnot exists'}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response( {"message": "An Error Occured"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
