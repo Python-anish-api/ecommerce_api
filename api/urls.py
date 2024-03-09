@@ -1,7 +1,7 @@
 from django.urls import path
 from userauths import views as userauth_views
 from rest_framework_simplejwt.views import TokenRefreshView
-from store import views as category_views
+from store import views as store_views
 
 urlpatterns = [
     path('user/token/', userauth_views.MyTokenObtainPairView.as_view()),
@@ -11,8 +11,24 @@ urlpatterns = [
     path('user/password-change/', userauth_views.PasswordChangeView.as_view(), name='password_reset'),
     
     # store models
-    path('categories/', category_views.CategoryListApiView.as_view(), name='categories'),
-    path('products/', category_views.ProductListApiView.as_view(), name='products'),
-    path('product-detail/<slug>/', category_views.ProductDetailApiView.as_view(), name='product-detail'),
+    path('categories/', store_views.CategoryListApiView.as_view(), name='categories'),
+    path('products/', store_views.ProductListApiView.as_view(), name='products'),
+    path('product-detail/<slug>/', store_views.ProductDetailApiView.as_view(), name='product-detail'),
+    
+    
+    path('cart-view/', store_views.CartApiView.as_view()),
+    path('cart-list/<str:cart_id>/', store_views.CartListView.as_view(), name='cart-list'),
+    path('cart-list/<str:cart_id>/<int:user_id>/', store_views.CartListView.as_view()),
+    path('cart-detail/<str:cart_id>/', store_views.CartDetailView.as_view()),
+    path('cart-detail/<str:cart_id>/<int:user_id>/', store_views.CartDetailView.as_view()),
+    
+    path('cart-delete/<str:cart_id>/<int:item_id>/', store_views.CartItemDeleteApiView.as_view()),
+    path('cart-delete/<str:cart_id>/<int:item_id>/<int:user_id>/', store_views.CartItemDeleteApiView.as_view(), name='cart-delete'),
+    
+    
+    path('create-order/', store_views.CreateOrderView.as_view(), name='cart-delete'),
+     path('checkout/<order_oid>/', store_views.CheckoutView.as_view(), name='checkout'),
 
+
+    
 ]
