@@ -372,3 +372,93 @@ class CouponApiView(generics.CreateAPIView):
         else:
             return Response( {"message": "Coupon Does Not Exists"}, status=status.HTTP_404_NOT_FOUND)
 
+import stripe
+from django.conf import settings
+from django.shortcuts import redirect
+
+stripe.api_key= 'aniscicnsdkvnfovnrevwjefdnqocnsdncdsvhowhf[osnowdvwoewdksvoh2oovjw['
+class StripeCheckoutView(generics.CreateAPIView):
+    serializer_class = CartOrderSerializer
+
+    def create(self, request, *args, **kwargs):
+        order_oid = self.kwargs['order_oid']
+        order = CartOrder.objects.filter(oid=order_oid).first()
+
+        if not order:
+            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+        try:
+            checkout_session = stripe.checkout.Session.create(
+                customer_email=order.email,
+                payment_method_types=['card'],
+                line_items=[
+                    {
+                        'price_data': {
+                            'currency': 'usd',
+                            'product_data': {
+                                'name': order.full_name,
+                            },
+                            'unit_amount': int(order.total * 100),
+                        },
+                        'quantity': 1,
+                    }
+                ],
+                mode='payment',
+                # success_url = f"{settings.SITE_URL}/payment-success/{{order.oid}}/?session_id={{CHECKOUT_SESSION_ID}}",
+                # cancel_url = f"{settings.SITE_URL}/payment-success/{{order.oid}}/?session_id={{CHECKOUT_SESSION_ID}}",
+
+                success_url=settings.SITE_URL+'/payment-success/'+ order.oid +'?session_id={CHECKOUT_SESSION_ID}',
+                cancel_url=settings.SITE_URL+'/?session_id={CHECKOUT_SESSION_ID}',
+            )
+            order.stripe_session_id = checkout_session.id 
+            order.save()
+
+            return redirect(checkout_session.url)
+        except stripe.error.StripeError as e:
+            return Response( {'error': f'Something went wrong when creating stripe checkout session: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class PaymentSuccessView(generics.CreateAPIView):
+    serializer_class = CartOrderSerializer
+    queryset = CartOrder.objects.all()
+    
+    
+    def create(self, request, *args, **kwargs):
+        payload = request.data
+        
+        order_oid = payload['order_oid']
+        session_id = payload['session_id']
+
+        order = CartOrder.objects.get(oid=order_oid)
+        order_items = CartOrderItem.objects.filter(order=order)
+
+          
+
+        # Process Stripe Payment
+        if session_id != "null":
+            session = stripe.checkout.Session.retrieve(session_id)
+
+            if session.payment_status == "paid":
+                if order.payment_status == "processing":
+                    order.payment_status = "paid"
+                    order.save()
+
+                    # if order.buyer != None:
+                    #     send_notification(user=order.buyer, order=order)
+                    # for o in order_items:
+                    #     send_notification(vendor=o.vendor, order=order, order_item=o)
+
+                    return Response( {"message": "Payment Successfull"}, status=status.HTTP_201_CREATED)
+                else:
+                    return Response( {"message": "Already Paid"}, status=status.HTTP_201_CREATED)
+                
+            elif session.payment_status == "unpaid":
+                return Response( {"message": "unpaid!"}, status=status.HTTP_402_PAYMENT_REQUIRED)
+            elif session.payment_status == "canceled":
+                return Response( {"message": "cancelled!"}, status=status.HTTP_403_FORBIDDEN)
+            else:
+                return Response( {"message": "An Error Occured!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            session = None
